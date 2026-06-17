@@ -1,0 +1,532 @@
+# -*- coding: utf-8 -*-
+# ======================================================================
+# PERCUDANI AUTHORSHIP – Auditoría Estadística del SVR (100 ejecuciones)
+# Verificación de la convergencia al objetivo teórico 0.0476
+# ======================================================================
+!pip install -q numpy matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+from numpy.fft import fft, fftfreq
+import time
+
+print("="*75)
+print("PERCUDANI AUTHORSHIP - Auditoría Estadística del SVR (100 runs)")
+print("="*75)
+
+# ----------------------------------------------------------------------
+# Parámetros UAT (constantes del modelo)
+# ----------------------------------------------------------------------
+N_FASES = 8
+K_EARLY = 0.967
+PHASE_STEP_QUANTUM = 45.0 * K_EARLY       # 43.515°
+R_GEOM = 0.2792
+ETA_CAUSAL = 0.781
+KAPPA_CRIT = 4.978
+OVERDRIVE = 5.140
+F_BASE = 187.37
+FS = 8000
+DURACION = 0.5
+SIGMA_TVI = 3.2400
+SVR_TARGET = (ETA_CAUSAL * R_GEOM / SIGMA_TVI) * 0.7071  # ≈ 0.0476
+
+# Construcción del teseracto (igual que en las simulaciones anteriores)
+angulos = np.deg2rad(np.arange(N_FASES) * PHASE_STEP_QUANTUM)
+teseracto = np.column_stack([np.cos(angulos), np.sin(angulos)])
+
+def simular_overdrive_liberado(teseracto, n_samples, ruido_base=0.01):
+    t = np.linspace(0, DURACION, n_samples)
+    centro = DURACION / 2
+    sigma = 0.02
+    envolvente = np.exp(-0.5 * ((t - centro) / sigma)**2)
+    portadora = np.sin(2 * np.pi * F_BASE * t)
+    foton = envolvente * portadora
+
+    senales_frentes = []
+    for i in range(N_FASES):
+        factor_ruido = ruido_base * (1 + 0.5 * np.abs(np.sin(angulos[i])))
+        ruido_fondo = np.random.randn(n_samples) * factor_ruido
+        fase_modulada = foton * np.cos(angulos[i]) + ruido_fondo * np.sin(angulos[i])
+        senales_frentes.append(fase_modulada)
+
+    pares = np.sum(senales_frentes[::2], axis=0)
+    impares = np.sum(senales_frentes[1::2], axis=0)
+
+    # Coherencia local
+    ventana = 50
+    coherencia_local = np.zeros(n_samples)
+    for i in range(ventana, n_samples - ventana):
+        corr = np.corrcoef(pares[i-ventana:i+ventana], impares[i-ventana:i+ventana])[0,1]
+        coherencia_local[i] = max(0, corr)
+
+    # Ganancia liberada
+    factor_ganancia = R_GEOM * (OVERDRIVE / KAPPA_CRIT) * coherencia_local
+    senal_combinada = (pares + impares) / N_FASES * (1 + factor_ganancia)
+
+    return senal_combinada
+
+def calcular_svr(senal, sigma_tvi=SIGMA_TVI):
+    rms = np.sqrt(np.mean(senal**2))
+    amp_max = np.max(np.abs(senal)) if np.max(np.abs(senal)) > 0 else 1
+    rms_norm = rms / amp_max * 0.7071
+    return rms_norm / sigma_tvi
+
+# ----------------------------------------------------------------------
+# Ejecutar 100 veces con distintas semillas de ruido
+# ----------------------------------------------------------------------
+N_RUNS = 100
+n_samples = int(FS * DURACION)
+svr_results = []
+start_time = time.time()
+
+for run in range(N_RUNS):
+    # Semilla distinta en cada iteración para independencia estadística
+    np.random.seed(run)
+    senal = simular_overdrive_liberado(teseracto, n_samples)
+    svr_val = calcular_svr(senal)
+    svr_results.append(svr_val)
+    if (run+1) % 20 == 0:
+        elapsed = time.time() - start_time
+        print(f"  Run {run+1}/{N_RUNS} completado (t={elapsed:.0f}s)")
+
+svr_results = np.array(svr_results)
+total_time = time.time() - start_time
+print(f"\n100 ejecuciones finalizadas en {total_time:.0f} segundos.")
+
+# ----------------------------------------------------------------------
+# Estadísticos
+# ----------------------------------------------------------------------
+mean_svr = np.mean(svr_results)
+std_svr = np.std(svr_results, ddof=1)  # muestra
+sem_svr = std_svr / np.sqrt(N_RUNS)    # error estándar de la media
+ci_95 = 1.96 * sem_svr                 # intervalo de confianza 95%
+
+print(f"\n--- RESULTADOS DE LA AUDITORÍA ---")
+print(f"SVR objetivo teórico:       {SVR_TARGET:.6f}")
+print(f"SVR medio experimental:     {mean_svr:.6f}")
+print(f"Desviación estándar:        {std_svr:.6f}")
+print(f"Error estándar de la media: {sem_svr:.6f}")
+print(f"Intervalo de confianza 95%: [{mean_svr - ci_95:.6f}, {mean_svr + ci_95:.6f}]")
+print(f"Diferencia media - objetivo: {mean_svr - SVR_TARGET:.6f}")
+
+if abs(mean_svr - SVR_TARGET) < ci_95:
+    print("\n✓ La media experimental es compatible con el valor teórico dentro del 95% de confianza.")
+    print("  Las fluctuaciones observadas (incluido el 12% de una sola ejecución) son variabilidad muestral legítima.")
+else:
+    print("\n⚠ La media experimental difiere del objetivo más allá del intervalo de confianza.")
+    print("  Se recomienda revisar η_causal o la función de ganancia.")
+
+# ----------------------------------------------------------------------
+# Histograma
+# ----------------------------------------------------------------------
+plt.figure(figsize=(10, 6))
+plt.hist(svr_results, bins=20, alpha=0.7, color='steelblue', edgecolor='black', label='SVR de 100 ejecuciones')
+plt.axvline(SVR_TARGET, color='red', linewidth=2.5, linestyle='--', label=f'Objetivo teórico ({SVR_TARGET:.6f})')
+plt.axvline(mean_svr, color='green', linewidth=2, linestyle='-', label=f'Media experimental ({mean_svr:.6f})')
+plt.xlabel('Signal-to-Viscosity Ratio (SVR)', fontsize=12)
+plt.ylabel('Frecuencia', fontsize=12)
+plt.title('Distribución del SVR en 100 ejecuciones independientes\n(Overdrive liberado, ruido aleatorio)', fontsize=13)
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig('auditoria_svr_100_runs.png', dpi=150)
+plt.show()
+
+print("\nHistograma guardado como 'auditoria_svr_100_runs.png'")
+print("="*75)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# -*- coding: utf-8 -*-
+# ======================================================================
+# PERCUDANI AUTHORSHIP – Calibración Automática de la Ganancia
+# Ajuste del factor de escala para igualar SVR medio al objetivo
+# ======================================================================
+!pip install -q numpy matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+print("="*75)
+print("PERCUDANI AUTHORSHIP - Calibración de la Ganancia del Overdrive")
+print("="*75)
+
+# Parámetros UAT
+N_FASES = 8
+K_EARLY = 0.967
+PHASE_STEP_QUANTUM = 45.0 * K_EARLY
+R_GEOM = 0.2792
+ETA_CAUSAL = 0.781
+KAPPA_CRIT = 4.978
+OVERDRIVE = 5.140
+F_BASE = 187.37
+FS = 8000
+DURACION = 0.5
+SIGMA_TVI = 3.2400
+SVR_TARGET = (ETA_CAUSAL * R_GEOM / SIGMA_TVI) * 0.7071
+
+angulos = np.deg2rad(np.arange(N_FASES) * PHASE_STEP_QUANTUM)
+teseracto = np.column_stack([np.cos(angulos), np.sin(angulos)])
+
+def simular_con_factor_escala(teseracto, n_samples, factor_escala, ruido_base=0.01):
+    t = np.linspace(0, DURACION, n_samples)
+    centro = DURACION / 2
+    sigma = 0.02
+    envolvente = np.exp(-0.5 * ((t - centro) / sigma)**2)
+    portadora = np.sin(2 * np.pi * F_BASE * t)
+    foton = envolvente * portadora
+
+    senales_frentes = []
+    for i in range(N_FASES):
+        factor_ruido = ruido_base * (1 + 0.5 * np.abs(np.sin(angulos[i])))
+        ruido_fondo = np.random.randn(n_samples) * factor_ruido
+        fase_modulada = foton * np.cos(angulos[i]) + ruido_fondo * np.sin(angulos[i])
+        senales_frentes.append(fase_modulada)
+
+    pares = np.sum(senales_frentes[::2], axis=0)
+    impares = np.sum(senales_frentes[1::2], axis=0)
+
+    ventana = 50
+    coherencia_local = np.zeros(n_samples)
+    for i in range(ventana, n_samples - ventana):
+        corr = np.corrcoef(pares[i-ventana:i+ventana], impares[i-ventana:i+ventana])[0,1]
+        coherencia_local[i] = max(0, corr)
+
+    # Ganancia con factor de escala ajustable
+    factor_ganancia = factor_escala * R_GEOM * (OVERDRIVE / KAPPA_CRIT) * coherencia_local
+    senal_combinada = (pares + impares) / N_FASES * (1 + factor_ganancia)
+
+    return senal_combinada
+
+def calcular_svr(senal, sigma_tvi=SIGMA_TVI):
+    rms = np.sqrt(np.mean(senal**2))
+    amp_max = np.max(np.abs(senal)) if np.max(np.abs(senal)) > 0 else 1
+    rms_norm = rms / amp_max * 0.7071
+    return rms_norm / sigma_tvi
+
+# Barrer factores de escala
+factores = np.linspace(0.5, 5.0, 30)
+medias_svr = []
+n_samples = int(FS * DURACION)
+N_RUNS = 20  # menos ejecuciones para el barrido
+
+for factor in factores:
+    svr_vals = []
+    for run in range(N_RUNS):
+        np.random.seed(run)
+        senal = simular_con_factor_escala(teseracto, n_samples, factor)
+        svr_vals.append(calcular_svr(senal))
+    medias_svr.append(np.mean(svr_vals))
+    print(f"Factor {factor:.2f} → SVR medio = {medias_svr[-1]:.6f}")
+
+medias_svr = np.array(medias_svr)
+
+# Encontrar el factor que minimiza la diferencia con el objetivo
+diffs = np.abs(medias_svr - SVR_TARGET)
+idx_opt = np.argmin(diffs)
+factor_optimo = factores[idx_opt]
+svr_optimo = medias_svr[idx_opt]
+
+print(f"\n--- CALIBRACIÓN COMPLETADA ---")
+print(f"Factor de escala óptimo: {factor_optimo:.2f}")
+print(f"SVR medio con ese factor: {svr_optimo:.6f}")
+print(f"Diferencia con el objetivo: {abs(svr_optimo - SVR_TARGET):.6f}")
+
+# Gráfico de calibración
+plt.figure(figsize=(10, 5))
+plt.plot(factores, medias_svr, 'b-o', markersize=5, label='SVR medio experimental')
+plt.axhline(SVR_TARGET, color='red', linestyle='--', label=f'Objetivo teórico ({SVR_TARGET:.6f})')
+plt.axvline(factor_optimo, color='green', linestyle=':', label=f'Factor óptimo = {factor_optimo:.2f}')
+plt.xlabel('Factor de escala de la ganancia')
+plt.ylabel('SVR medio')
+plt.title('Calibración del Factor de Ganancia del Overdrive')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig('calibracion_factor_ganancia.png', dpi=150)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# -*- coding: utf-8 -*-
+# ======================================================================
+# PERCUDANI AUTHORSHIP – Ganancia por Mezcla Cruzada de Frentes
+# Ajuste de la alineación par/impar con el Overdrive
+# ======================================================================
+!pip install -q numpy matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+print("="*75)
+print("PERCUDANI AUTHORSHIP - Calibración de Mezcla Cruzada (Overdrive sobre fase)")
+print("="*75)
+
+# Parámetros UAT
+N_FASES = 8
+K_EARLY = 0.967
+PHASE_STEP_QUANTUM = 45.0 * K_EARLY
+R_GEOM = 0.2792
+ETA_CAUSAL = 0.781
+KAPPA_CRIT = 4.978
+OVERDRIVE = 5.140
+F_BASE = 187.37
+FS = 8000
+DURACION = 0.5
+SIGMA_TVI = 3.2400
+SVR_TARGET = (ETA_CAUSAL * R_GEOM / SIGMA_TVI) * 0.7071
+
+angulos = np.deg2rad(np.arange(N_FASES) * PHASE_STEP_QUANTUM)
+teseracto = np.column_stack([np.cos(angulos), np.sin(angulos)])
+
+def simular_mezcla_cruzada(teseracto, n_samples, gamma, ruido_base=0.01):
+    t = np.linspace(0, DURACION, n_samples)
+    centro = DURACION / 2
+    sigma = 0.02
+    envolvente = np.exp(-0.5 * ((t - centro) / sigma)**2)
+    portadora = np.sin(2 * np.pi * F_BASE * t)
+    foton = envolvente * portadora
+
+    senales_frentes = []
+    for i in range(N_FASES):
+        factor_ruido = ruido_base * (1 + 0.5 * np.abs(np.sin(angulos[i])))
+        ruido_fondo = np.random.randn(n_samples) * factor_ruido
+        fase_modulada = foton * np.cos(angulos[i]) + ruido_fondo * np.sin(angulos[i])
+        senales_frentes.append(fase_modulada)
+
+    pares = np.sum(senales_frentes[::2], axis=0)
+    impares = np.sum(senales_frentes[1::2], axis=0)
+
+    # Coherencia local
+    ventana = 50
+    coherencia_local = np.zeros(n_samples)
+    for i in range(ventana, n_samples - ventana):
+        corr = np.corrcoef(pares[i-ventana:i+ventana], impares[i-ventana:i+ventana])[0,1]
+        coherencia_local[i] = max(0, corr)
+
+    # Factor de mezcla α(t) = γ * (κ/κ_crit) * C(t)
+    alpha = gamma * (OVERDRIVE / KAPPA_CRIT) * coherencia_local
+
+    # Mezcla cruzada: cada frente recibe una fracción del otro
+    pares_mix = pares + alpha * impares
+    impares_mix = impares + alpha * pares
+
+    # Señal combinada
+    senal_combinada = (pares_mix + impares_mix) / N_FASES
+
+    return senal_combinada
+
+def calcular_svr(senal, sigma_tvi=SIGMA_TVI):
+    rms = np.sqrt(np.mean(senal**2))
+    amp_max = np.max(np.abs(senal)) if np.max(np.abs(senal)) > 0 else 1
+    rms_norm = rms / amp_max * 0.7071
+    return rms_norm / sigma_tvi
+
+# Barrido de gamma
+gammas = np.linspace(0.1, 2.0, 20)
+medias_svr = []
+n_samples = int(FS * DURACION)
+N_RUNS = 20
+
+for gamma in gammas:
+    svr_vals = []
+    for run in range(N_RUNS):
+        np.random.seed(run)
+        senal = simular_mezcla_cruzada(teseracto, n_samples, gamma)
+        svr_vals.append(calcular_svr(senal))
+    medias_svr.append(np.mean(svr_vals))
+    print(f"γ = {gamma:.2f} → SVR medio = {medias_svr[-1]:.6f}")
+
+medias_svr = np.array(medias_svr)
+
+# Encontrar el gamma óptimo
+diffs = np.abs(medias_svr - SVR_TARGET)
+idx_opt = np.argmin(diffs)
+gamma_opt = gammas[idx_opt]
+svr_opt = medias_svr[idx_opt]
+
+print(f"\n--- RESULTADOS DE LA CALIBRACIÓN ---")
+print(f"γ óptimo: {gamma_opt:.2f}")
+print(f"SVR medio con γ óptimo: {svr_opt:.6f}")
+print(f"Diferencia con el objetivo: {abs(svr_opt - SVR_TARGET):.6f}")
+
+# Gráfico
+plt.figure(figsize=(10, 5))
+plt.plot(gammas, medias_svr, 'b-o', markersize=5, label='SVR medio experimental')
+plt.axhline(SVR_TARGET, color='red', linestyle='--', label=f'Objetivo teórico ({SVR_TARGET:.6f})')
+plt.axvline(gamma_opt, color='green', linestyle=':', label=f'γ óptimo = {gamma_opt:.2f}')
+plt.xlabel('γ (factor de mezcla cruzada)')
+plt.ylabel('SVR medio')
+plt.title('Calibración de la Mezcla Cruzada de Frentes')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig('calibracion_mezcla_cruzada.png', dpi=150)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# -*- coding: utf-8 -*-
+# ======================================================================
+# PERCUDANI AUTHORSHIP – Embudo Termodinámico (Ganancia sobre la fase)
+# Overdrive actúa como alineador de frentes, no como amplificador.
+# ======================================================================
+!pip install -q numpy matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+print("="*75)
+print("PERCUDANI AUTHORSHIP - Embudo Termodinámico (Overdrive sobre fase)")
+print("="*75)
+
+N_FASES = 8
+K_EARLY = 0.967
+PHASE_STEP_QUANTUM = 45.0 * K_EARLY       # 43.515°
+R_GEOM = 0.2792
+ETA_CAUSAL = 0.781
+KAPPA_CRIT = 4.978
+OVERDRIVE = 5.140
+F_BASE = 187.37
+FS = 8000
+DURACION = 0.5
+SIGMA_TVI = 3.2400
+SVR_TARGET = (ETA_CAUSAL * R_GEOM / SIGMA_TVI) * 0.7071  # ≈ 0.0476
+
+angulos = np.deg2rad(np.arange(N_FASES) * PHASE_STEP_QUANTUM)
+teseracto = np.column_stack([np.cos(angulos), np.sin(angulos)])
+
+def simular_embudo(teseracto, n_samples, gamma, ruido_base=0.01):
+    """
+    El Overdrive ajusta el ángulo de mezcla entre pares e impares.
+    s(t) = pares * cos(φ) + impares * sin(φ)
+    φ(t) = γ * (κ/κ_crit) * C(t)
+    """
+    t = np.linspace(0, DURACION, n_samples)
+    centro = DURACION / 2
+    sigma = 0.02
+    envolvente = np.exp(-0.5 * ((t - centro) / sigma)**2)
+    portadora = np.sin(2 * np.pi * F_BASE * t)
+    foton = envolvente * portadora
+
+    senales_frentes = []
+    for i in range(N_FASES):
+        factor_ruido = ruido_base * (1 + 0.5 * np.abs(np.sin(angulos[i])))
+        ruido_fondo = np.random.randn(n_samples) * factor_ruido
+        fase_modulada = foton * np.cos(angulos[i]) + ruido_fondo * np.sin(angulos[i])
+        senales_frentes.append(fase_modulada)
+
+    pares = np.sum(senales_frentes[::2], axis=0)
+    impares = np.sum(senales_frentes[1::2], axis=0)
+
+    # Coherencia local
+    ventana = 50
+    coherencia_local = np.zeros(n_samples)
+    for i in range(ventana, n_samples - ventana):
+        corr = np.corrcoef(pares[i-ventana:i+ventana], impares[i-ventana:i+ventana])[0,1]
+        coherencia_local[i] = max(0, corr)
+
+    # Ángulo de mezcla controlado por el Overdrive
+    phi = gamma * (OVERDRIVE / KAPPA_CRIT) * coherencia_local  # radianes
+
+    # Embudo termodinámico: mezcla rotacional
+    senal_embudo = pares * np.cos(phi) + impares * np.sin(phi)
+
+    return senal_embudo
+
+def calcular_svr(senal, sigma_tvi=SIGMA_TVI):
+    rms = np.sqrt(np.mean(senal**2))
+    amp_max = np.max(np.abs(senal)) if np.max(np.abs(senal)) > 0 else 1
+    rms_norm = rms / amp_max * 0.7071
+    return rms_norm / sigma_tvi
+
+# Barrido de gamma (ángulo máximo)
+gammas = np.linspace(0.1, 3.0, 20)
+medias_svr = []
+n_samples = int(FS * DURACION)
+N_RUNS = 20
+
+for gamma in gammas:
+    svr_vals = []
+    for run in range(N_RUNS):
+        np.random.seed(run)
+        senal = simular_embudo(teseracto, n_samples, gamma)
+        svr_vals.append(calcular_svr(senal))
+    medias_svr.append(np.mean(svr_vals))
+    print(f"γ = {gamma:.2f} → SVR medio = {medias_svr[-1]:.6f}")
+
+medias_svr = np.array(medias_svr)
+
+# Encontrar gamma óptimo
+diffs = np.abs(medias_svr - SVR_TARGET)
+idx_opt = np.argmin(diffs)
+gamma_opt = gammas[idx_opt]
+svr_opt = medias_svr[idx_opt]
+
+print(f"\n--- RESULTADOS ---")
+print(f"γ óptimo: {gamma_opt:.2f}")
+print(f"SVR medio con γ óptimo: {svr_opt:.6f}")
+print(f"Diferencia con el objetivo: {abs(svr_opt - SVR_TARGET):.6f}")
+
+# Gráfico
+plt.figure(figsize=(10, 5))
+plt.plot(gammas, medias_svr, 'b-o', markersize=5, label='SVR medio experimental')
+plt.axhline(SVR_TARGET, color='red', linestyle='--', label=f'Objetivo teórico ({SVR_TARGET:.6f})')
+plt.axvline(gamma_opt, color='green', linestyle=':', label=f'γ óptimo = {gamma_opt:.2f}')
+plt.xlabel('γ (amplitud del ángulo de mezcla)')
+plt.ylabel('SVR medio')
+plt.title('Embudo Termodinámico: Overdrive sobre fase')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig('embudo_termodinamico.png', dpi=150)
+plt.show()

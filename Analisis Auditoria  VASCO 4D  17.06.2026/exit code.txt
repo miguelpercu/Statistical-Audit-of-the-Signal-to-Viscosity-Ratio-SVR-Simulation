@@ -1,0 +1,150 @@
+ ===========================================================================
+PERCUDANI AUTHORSHIP - Auditoría Estadística del SVR (100 runs)
+===========================================================================
+  Run 20/100 completado (t=5s)
+  Run 40/100 completado (t=9s)
+  Run 60/100 completado (t=14s)
+  Run 80/100 completado (t=19s)
+  Run 100/100 completado (t=23s)
+
+100 ejecuciones finalizadas en 23 segundos.
+
+--- RESULTADOS DE LA AUDITORÍA ---
+SVR objetivo teórico:       0.047589
+SVR medio experimental:     0.037924
+Desviación estándar:        0.001708
+Error estándar de la media: 0.000171
+Intervalo de confianza 95%: [0.037589, 0.038259]
+Diferencia media - objetivo: -0.009665
+
+⚠ La media experimental difiere del objetivo más allá del intervalo de confianza.
+  Se recomienda revisar η_causal o la función de ganancia.
+
+Histograma guardado como 'auditoria_svr_100_runs.png'
+===========================================================================
+
+
+
+
+
+
+
+
+
+
+
+ ===========================================================================
+PERCUDANI AUTHORSHIP - Calibración de la Ganancia del Overdrive
+===========================================================================
+Factor 0.50 → SVR medio = 0.039018
+Factor 0.66 → SVR medio = 0.038708
+Factor 0.81 → SVR medio = 0.038427
+Factor 0.97 → SVR medio = 0.038169
+Factor 1.12 → SVR medio = 0.037933
+Factor 1.28 → SVR medio = 0.037716
+Factor 1.43 → SVR medio = 0.037517
+Factor 1.59 → SVR medio = 0.037332
+Factor 1.74 → SVR medio = 0.037161
+Factor 1.90 → SVR medio = 0.037003
+Factor 2.05 → SVR medio = 0.036856
+Factor 2.21 → SVR medio = 0.036719
+Factor 2.36 → SVR medio = 0.036591
+Factor 2.52 → SVR medio = 0.036471
+Factor 2.67 → SVR medio = 0.036359
+Factor 2.83 → SVR medio = 0.036254
+Factor 2.98 → SVR medio = 0.036155
+Factor 3.14 → SVR medio = 0.036063
+Factor 3.29 → SVR medio = 0.035975
+Factor 3.45 → SVR medio = 0.035893
+Factor 3.60 → SVR medio = 0.035815
+Factor 3.76 → SVR medio = 0.035742
+Factor 3.91 → SVR medio = 0.035672
+Factor 4.07 → SVR medio = 0.035606
+Factor 4.22 → SVR medio = 0.035544
+Factor 4.38 → SVR medio = 0.035484
+Factor 4.53 → SVR medio = 0.035428
+Factor 4.69 → SVR medio = 0.035374
+Factor 4.84 → SVR medio = 0.035323
+Factor 5.00 → SVR medio = 0.035274
+
+--- CALIBRACIÓN COMPLETADA ---
+Factor de escala óptimo: 0.50
+SVR medio con ese factor: 0.039018
+Diferencia con el objetivo: 0.008571
+
+
+
+
+
+
+
+
+
+ ===========================================================================
+PERCUDANI AUTHORSHIP - Calibración de Mezcla Cruzada (Overdrive sobre fase)
+===========================================================================
+γ = 0.10 → SVR medio = 0.039328
+γ = 0.20 → SVR medio = 0.038594
+γ = 0.30 → SVR medio = 0.038001
+γ = 0.40 → SVR medio = 0.037515
+γ = 0.50 → SVR medio = 0.037110
+γ = 0.60 → SVR medio = 0.036769
+γ = 0.70 → SVR medio = 0.036478
+γ = 0.80 → SVR medio = 0.036229
+γ = 0.90 → SVR medio = 0.036014
+γ = 1.00 → SVR medio = 0.035826
+γ = 1.10 → SVR medio = 0.035661
+γ = 1.20 → SVR medio = 0.035515
+γ = 1.30 → SVR medio = 0.035385
+γ = 1.40 → SVR medio = 0.035270
+γ = 1.50 → SVR medio = 0.035166
+γ = 1.60 → SVR medio = 0.035072
+γ = 1.70 → SVR medio = 0.034987
+γ = 1.80 → SVR medio = 0.034910
+γ = 1.90 → SVR medio = 0.034840
+γ = 2.00 → SVR medio = 0.034776
+
+--- RESULTADOS DE LA CALIBRACIÓN ---
+γ óptimo: 0.10
+SVR medio con γ óptimo: 0.039328
+Diferencia con el objetivo: 0.008261
+
+
+
+
+
+
+
+
+
+
+
+
+ ===========================================================================
+PERCUDANI AUTHORSHIP - Embudo Termodinámico (Overdrive sobre fase)
+===========================================================================
+γ = 0.10 → SVR medio = 0.042993
+γ = 0.25 → SVR medio = 0.041725
+γ = 0.41 → SVR medio = 0.040939
+γ = 0.56 → SVR medio = 0.040450
+γ = 0.71 → SVR medio = 0.040229
+γ = 0.86 → SVR medio = 0.040232
+γ = 1.02 → SVR medio = 0.040384
+γ = 1.17 → SVR medio = 0.040665
+γ = 1.32 → SVR medio = 0.040883
+γ = 1.47 → SVR medio = 0.041305
+γ = 1.63 → SVR medio = 0.042068
+γ = 1.78 → SVR medio = 0.043207
+γ = 1.93 → SVR medio = 0.044883
+γ = 2.08 → SVR medio = 0.047263
+γ = 2.24 → SVR medio = 0.049626
+γ = 2.39 → SVR medio = 0.051472
+γ = 2.54 → SVR medio = 0.052248
+γ = 2.69 → SVR medio = 0.053591
+γ = 2.85 → SVR medio = 0.055472
+γ = 3.00 → SVR medio = 0.050582
+
+--- RESULTADOS ---
+γ óptimo: 2.08
+SVR medio con γ óptimo: 0.047263
+Diferencia con el objetivo: 0.000326

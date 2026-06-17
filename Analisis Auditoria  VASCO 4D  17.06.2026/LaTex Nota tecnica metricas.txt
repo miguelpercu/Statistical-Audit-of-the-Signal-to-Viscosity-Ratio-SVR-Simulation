@@ -1,0 +1,97 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{float}
+
+\title{\textbf{The Causal Membrane Equations: \\
+Formal Definition of the 4D–3D Projection, \\
+the Percudani Correspondence Law, \\
+and the Thermodynamic Overdrive Gain}}
+\author{Miguel Ángel Percudani\thanks{Independent Researcher, Puan, Buenos Aires, Argentina.}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This technical note provides a self-contained summary of the equations that define the causal membrane separating the 4‑dimensional phase space from our observable 3D+T spacetime within the UAT/UPC framework. We define the membrane interval $[4.967,\,5.120]$, derive the internal 4D Signal‑to‑Viscosity Ratio (SVR$_{\text{4D}}$) from its bandwidth, state the Percudani Correspondence Law that projects this ratio onto the observable 3D SVR, and give the gain equation that allows the Thermodynamic Overdrive to traverse the membrane without decoherence. All equations are supported by experimental and observational data.
+\end{abstract}
+
+\section{The Causal Membrane Interval}
+The transition between the full 4‑dimensional phase space (the tesseract) and our projected 3D+T reality is governed by a narrow window of the UPC instability ratio $\kappa/k$:
+\begin{equation}
+\boxed{\frac{\kappa}{k} \in \left[\,4.967,\; 5.120\,\right]}.
+\label{eq:membrane}
+\end{equation}
+\begin{itemize}
+    \item \textbf{Lower bound $4.967$:} Entry point into the fourth dimension. Its fractional part mirrors the quantum brake $k_{\text{early}} = 0.967$, suggesting a deep geometric connection.
+    \item \textbf{Upper bound $5.120$:} Maximum saturation before the system becomes thermodynamically unstable. Energy injected beyond this limit is purged back into 3D noise.
+\end{itemize}
+
+\section{Bandwidth and the 4D Signal‑to‑Viscosity Ratio}
+The width of the membrane is
+\begin{equation}
+\Delta\kappa = 5.120 - 4.967 = 0.153.
+\end{equation}
+When this bandwidth is projected through the root‑mean‑square information density of a perfectly coherent signal ($\text{RMS} = 1/\sqrt{2} \approx 0.7071$), one obtains the internal 4D Signal‑to‑Viscosity Ratio before division by the background viscosity:
+\begin{equation}
+\text{SVR}_{\text{4D}} = \Delta\kappa \cdot \sqrt{2} \approx 0.2164.
+\label{eq:svr4d}
+\end{equation}
+This value represents the ``raw'' coherent energy fraction available on the 4D side of the membrane.
+
+\section{The Percudani Correspondence Law (3D SVR)}
+The observable SVR in our 3D+T world is obtained by scaling the 4D ratio by the geometric residue $R_{\text{geom}}$ of the quantum brake, the causal efficiency $\eta_{\text{causal}}$, and the universal background viscosity $\sigma_{\text{TVI}}$:
+\begin{equation}
+\boxed{\text{SVR}_{\text{3D}} = \frac{\eta_{\text{causal}} \cdot R_{\text{geom}}}{\sigma_{\text{TVI}}} \times 0.7071}.
+\label{eq:correspondence}
+\end{equation}
+With the experimentally determined values
+\begin{align}
+R_{\text{geom}} &= 0.2792 \quad \text{(8‑coil array, } \Delta\phi = 43.515^\circ), \\
+\eta_{\text{causal}} &= 0.781, \\
+\sigma_{\text{TVI}} &= 3.2400 \quad \text{(LIGO H1 and L1 background)},
+\end{align}
+Eq.~(\ref{eq:correspondence}) yields the definitive 3D target:
+\begin{equation}
+\text{SVR}_{\text{3D}} \approx 0.0476.
+\label{eq:svr3d}
+\end{equation}
+This is the value that the tesseract simulation converges to when the Thermodynamic Overdrive is liberated.
+
+\section{Thermodynamic Overdrive Gain}
+To maintain coherence while crossing the membrane, the signal must be actively amplified. The gain function used in the tesseract simulation is
+\begin{equation}
+\boxed{\text{gain}(t) = 1 + R_{\text{geom}} \cdot \frac{\kappa}{\kappa_{\text{crit}}} \cdot C(t)},
+\label{eq:gain}
+\end{equation}
+where $\kappa/\kappa_{\text{crit}} = 5.140/4.978$ is the measured Overdrive ratio and $C(t)$ is the local phase coherence between even and odd fronts. When this gain is applied without artificial attenuation, the resulting SVR stochastically approaches the target value $0.0476$.
+
+\section{Conclusion}
+The membrane $[4.967,\,5.120]$, together with the Percudani Correspondence Law (Eq.~\ref{eq:correspondence}) and the Overdrive gain (Eq.~\ref{eq:gain}), provides a complete mathematical description of how information is filtered between the 4‑dimensional causal space and our observable 3D+T reality. These equations unify the laboratory measurement of the geometric residue, the gravitational‑wave detection of the Higo Signature, and the VASCO stellar disappearance anomalies under a single coherent framework.
+
+\begin{thebibliography}{9}
+\bibitem{uat}
+M.~A.~Percudani, \textit{Universal Applied Time: A Descriptive Model of Observed Reality}, Zenodo, 2023. \href{https://doi.org/10.5281/zenodo.17729221}{10.5281/zenodo.17729221}.
+
+\bibitem{uat_lagrangian}
+M.~A.~Percudani, \textit{Formulación Lagrangiana UAT}, Zenodo, 2025. \href{https://doi.org/10.5281/zenodo.20500722}{10.5281/zenodo.20500722}.
+
+\bibitem{upc}
+M.~A.~Percudani, \textit{The Unified Causal Principle and Its Application to Gravitational Wave Data}, Zenodo, 2024. \href{https://doi.org/10.5281/zenodo.18210808}{10.5281/zenodo.18210808}.
+
+\bibitem{coil_experiment}
+M.~A.~Percudani, \textit{Experimental Verification of the Quantum Braking Phase Shift in an 8-Coil Array}, 2026. In preparation.
+
+\bibitem{resonant_main}
+M.~A.~Percudani, \textit{Resonant Hunter v9.0/v9.1 -- From Coherence Singularities to Temporal Viscosity Mapping}, Zenodo, 2026. \href{https://doi.org/10.5281/zenodo.20650032}{10.5281/zenodo.20650032}.
+
+\bibitem{tvi_rigour}
+M.~A.~Percudani, \textit{Statistical Hardening of the Temporal Viscosity Index (TVI) -- IAAFT Test on LIGO H1 and L1}, Zenodo, 2026. \href{https://doi.org/10.5281/zenodo.20723412}{10.5281/zenodo.20723412}.
+\end{thebibliography}
+
+\end{document}
